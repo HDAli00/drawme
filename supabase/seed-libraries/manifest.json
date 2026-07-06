@@ -1,0 +1,29 @@
+{
+  "libraries": [
+    {
+      "file": "aws-architecture-icons.excalidrawlib",
+      "name": "AWS Architecture Icons",
+      "description": "AWS architecture diagram icons — by Narhari Motivaras (MIT, excalidraw-libraries)"
+    },
+    {
+      "file": "aws-serverless-icons.excalidrawlib",
+      "name": "AWS Serverless Icons",
+      "description": "AWS serverless service icons — by Slobodan Stojanović (MIT, excalidraw-libraries)"
+    },
+    {
+      "file": "aws-simple-icons.excalidrawlib",
+      "name": "AWS Simple Icons",
+      "description": "Common AWS service icons — by husainkhambaty (MIT, excalidraw-libraries)"
+    },
+    {
+      "file": "gcp-icons.excalidrawlib",
+      "name": "GCP Icons",
+      "description": "Google Cloud Platform icons — by Clément Bosc (MIT, excalidraw-libraries)"
+    },
+    {
+      "file": "azure-cloud-services.excalidrawlib",
+      "name": "Azure Cloud Services",
+      "description": "Microsoft Azure service icons — by Youri Tjang & bothzoli (MIT, excalidraw-libraries)"
+    }
+  ]
+}
