@@ -21,6 +21,7 @@ export type EditorShellProps = {
     appState?: Record<string, unknown>;
     files?: Record<string, unknown>;
   };
+  initialUpdatedAt: string;
   initialLibraryItems: unknown[];
   userId: string;
 };
