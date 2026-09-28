@@ -32,6 +32,7 @@ export default async function DrawPage({
       drawingId={d.id}
       initialTitle={d.title}
       initialScene={d.scene ?? { elements: [], appState: {} }}
+      initialUpdatedAt={d.updated_at}
       initialLibraryItems={(libState?.library_items as unknown[]) ?? []}
       userId={user.id}
     />
