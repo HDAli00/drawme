@@ -12,8 +12,16 @@ export type Drawing = {
   title: string;
   scene: { elements: unknown[]; appState: Record<string, unknown> };
   thumbnail: string | null;
+  folder_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type Folder = {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
 };
 
 export type Library = {

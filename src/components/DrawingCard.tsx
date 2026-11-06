@@ -2,16 +2,28 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { renameDrawing, deleteDrawing } from "@/app/dashboard/actions";
+import {
+  renameDrawing,
+  deleteDrawing,
+  moveDrawing,
+} from "@/app/dashboard/actions";
+import type { Folder } from "@/lib/types";
 
 type DrawingSummary = {
   id: string;
   title: string;
   thumbnail: string | null;
   updated_at: string;
+  folder_id: string | null;
 };
 
-export default function DrawingCard({ drawing }: { drawing: DrawingSummary }) {
+export default function DrawingCard({
+  drawing,
+  folders,
+}: {
+  drawing: DrawingSummary;
+  folders: Folder[];
+}) {
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(drawing.title);
   const [pending, startTransition] = useTransition();
@@ -72,7 +84,25 @@ export default function DrawingCard({ drawing }: { drawing: DrawingSummary }) {
             {new Date(drawing.updated_at).toLocaleString()}
           </p>
         </div>
-        <div className="flex shrink-0 gap-1 opacity-0 transition group-hover:opacity-100">
+        <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+          <select
+            value={drawing.folder_id ?? ""}
+            onChange={(e) => {
+              const folderId = e.target.value || null;
+              startTransition(() => moveDrawing(drawing.id, folderId));
+            }}
+            disabled={pending}
+            title="Move to folder"
+            aria-label="Move to folder"
+            className="max-w-24 rounded border border-zinc-200 bg-white px-1 py-0.5 text-xs text-zinc-600"
+          >
+            <option value="">Unfiled</option>
+            {folders.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => setRenaming(true)}
             title="Rename"
