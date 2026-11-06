@@ -12,8 +12,16 @@ export type Drawing = {
   title: string;
   scene: { elements: unknown[]; appState: Record<string, unknown> };
   thumbnail: string | null;
+  folder_id: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type Folder = {
+  id: string;
+  owner_id: string;
+  name: string;
+  created_at: string;
 };
 
 export type Library = {
@@ -25,4 +33,22 @@ export type Library = {
   data: { libraryItems?: unknown[]; library?: unknown[] };
   storage_path: string | null;
   created_at: string;
+};
+
+export type Note = {
+  id: string;
+  owner_id: string;
+  folder_id: string | null;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// What a note needs to know to resolve [[links]] and drawing embeds.
+export type LinkTarget = {
+  id: string;
+  title: string;
+  folder_id: string | null;
+  updated_at: string;
 };

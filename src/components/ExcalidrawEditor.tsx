@@ -27,11 +27,13 @@ import type {
 import { createClient } from "@/lib/supabase/client";
 import type { EditorShellProps } from "./EditorShell";
 import LibraryDialog from "./LibraryDialog";
+import HistoryDialog from "./HistoryDialog";
 
 const SCENE_SAVE_DEBOUNCE_MS = 1500;
 const SCENE_SAVE_RETRY_MS = 3000;
 const LIBRARY_SAVE_DEBOUNCE_MS = 1000;
 const THUMBNAIL_MAX_SIZE = 400;
+const DRAFT_WRITE_DEBOUNCE_MS = 300;
 
 // Only persist appState keys that represent document state (not UI state).
 const PERSISTED_APP_STATE_KEYS = [
@@ -52,6 +54,51 @@ type SceneSnapshot = {
   appState: Record<string, unknown>;
   files: BinaryFiles;
 };
+
+type StoredScene = EditorShellProps["initialScene"];
+
+// Unsaved changes are mirrored to localStorage so a refresh, crash or closed
+// tab can never lose them: the next time the drawing opens, the draft is
+// restored and saved. `baseUpdatedAt` is the server version the draft was
+// made on top of, so a draft never overwrites newer work from elsewhere.
+type Draft = { baseUpdatedAt: string; scene: StoredScene };
+
+function draftKey(drawingId: string) {
+  return `drawme:draft:${drawingId}`;
+}
+
+function readDraft(drawingId: string): Draft | null {
+  try {
+    const raw = localStorage.getItem(draftKey(drawingId));
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(drawingId: string, draft: Draft) {
+  try {
+    localStorage.setItem(draftKey(drawingId), JSON.stringify(draft));
+  } catch {
+    // Most likely over quota because of embedded images: keep the elements.
+    try {
+      localStorage.setItem(
+        draftKey(drawingId),
+        JSON.stringify({ ...draft, scene: { ...draft.scene, files: {} } }),
+      );
+    } catch {
+      // Storage unavailable; the server save is still the primary copy.
+    }
+  }
+}
+
+function clearDraft(drawingId: string) {
+  try {
+    localStorage.removeItem(draftKey(drawingId));
+  } catch {
+    // Ignore.
+  }
+}
 
 function pickPersistedAppState(appState: AppState | Record<string, unknown>) {
   const full = appState as unknown as Record<string, unknown>;
@@ -76,6 +123,7 @@ export default function ExcalidrawEditor({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [title, setTitle] = useState(initialTitle);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const [initialVersion] = useState(() =>
     getSceneVersion(
@@ -94,6 +142,8 @@ export default function ExcalidrawEditor({
   const libraryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedLibrary = useRef<string>(JSON.stringify(initialLibraryItems));
+  const serverUpdatedAt = useRef<string>(initialUpdatedAt);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDirty = useCallback(() => {
     const snapshot = latestScene.current;
@@ -140,16 +190,25 @@ export default function ExcalidrawEditor({
         }
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("drawings")
         .update({ scene, ...(thumbnail !== undefined ? { thumbnail } : {}) })
-        .eq("id", drawingId);
+        .eq("id", drawingId)
+        .select("updated_at")
+        .single();
 
-      if (error) return false;
+      if (error || !data) return false;
 
+      serverUpdatedAt.current = data.updated_at;
       lastSavedVersion.current = version;
       lastSavedAppState.current = appStateJson;
-      setSaveState(isDirty() ? "unsaved" : "saved");
+      if (isDirty()) {
+        setSaveState("unsaved");
+      } else {
+        if (draftTimer.current) clearTimeout(draftTimer.current);
+        clearDraft(drawingId);
+        setSaveState("saved");
+      }
       return true;
     },
     [drawingId, isDirty, supabase],
@@ -203,13 +262,57 @@ export default function ExcalidrawEditor({
 
       hasLocalEdits.current = true;
       setSaveState("unsaved");
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+      draftTimer.current = setTimeout(() => {
+        const snapshot = latestScene.current;
+        if (!snapshot) return;
+        writeDraft(drawingId, {
+          baseUpdatedAt: serverUpdatedAt.current,
+          scene: {
+            elements: snapshot.elements.filter((el) => !el.isDeleted),
+            appState: snapshot.appState,
+            files: snapshot.files,
+          },
+        });
+      }, DRAFT_WRITE_DEBOUNCE_MS);
       if (sceneTimer.current) clearTimeout(sceneTimer.current);
       sceneTimer.current = setTimeout(() => {
         sceneTimer.current = null;
         void saveScene(true);
       }, SCENE_SAVE_DEBOUNCE_MS);
     },
-    [isDirty, saveScene],
+    [drawingId, isDirty, saveScene],
+  );
+
+  // Replace the canvas with a stored scene. With `asEdit`, the scene is
+  // treated as a local change and saved (used for drafts and restores).
+  const applyScene = useCallback(
+    (scene: StoredScene, asEdit: boolean) => {
+      const currentApi = api;
+      if (!currentApi) return;
+      const elements = restoreElements(
+        (scene.elements ?? []) as ExcalidrawElement[],
+        null,
+      );
+      const files = Object.values(scene.files ?? {}) as BinaryFileData[];
+      if (files.length) currentApi.addFiles(files);
+      lastSavedVersion.current = asEdit ? -1 : getSceneVersion(elements);
+      lastSavedAppState.current = "";
+      currentApi.updateScene({
+        elements,
+        appState: (scene.appState ?? {}) as unknown as AppState,
+      });
+      if (asEdit) {
+        hasLocalEdits.current = true;
+        latestScene.current = {
+          elements,
+          appState: pickPersistedAppState(scene.appState ?? {}),
+          files: (scene.files ?? {}) as BinaryFiles,
+        };
+        void flushScene();
+      }
+    },
+    [api, flushScene],
   );
 
   const handleLibraryChange = useCallback(
@@ -264,9 +367,9 @@ export default function ExcalidrawEditor({
     };
   }, [flushScene, isDirty]);
 
-  // The server-rendered scene can be stale (e.g. when returning via the
-  // browser's back button, Next.js reuses its cached page). Load the latest
-  // copy once and apply it if nothing has been edited yet.
+  // On open: restore unsaved changes left behind by a refresh or closed tab,
+  // otherwise make sure we show the latest server copy (the server-rendered
+  // scene can be stale when Next.js reuses a cached page on back/forward).
   useEffect(() => {
     if (!api) return;
     let cancelled = false;
@@ -276,27 +379,25 @@ export default function ExcalidrawEditor({
         .select("scene, updated_at")
         .eq("id", drawingId)
         .maybeSingle();
-      if (cancelled || error || !data) return;
-      if (data.updated_at === initialUpdatedAt || hasLocalEdits.current) return;
+      if (cancelled || error || !data || hasLocalEdits.current) return;
 
-      const scene = (data.scene ?? {}) as EditorShellProps["initialScene"];
-      const elements = restoreElements(
-        (scene.elements ?? []) as ExcalidrawElement[],
-        null,
-      );
-      const files = Object.values(scene.files ?? {}) as BinaryFileData[];
-      if (files.length) api.addFiles(files);
-      lastSavedVersion.current = getSceneVersion(elements);
-      lastSavedAppState.current = "";
-      api.updateScene({
-        elements,
-        appState: (scene.appState ?? {}) as unknown as AppState,
-      });
+      serverUpdatedAt.current = data.updated_at;
+      const draft = readDraft(drawingId);
+      if (draft && draft.baseUpdatedAt === data.updated_at) {
+        applyScene(draft.scene, true);
+        return;
+      }
+      // A draft based on an older version was either saved already or is
+      // superseded by newer work; never let it overwrite the server copy.
+      if (draft) clearDraft(drawingId);
+      if (data.updated_at !== initialUpdatedAt) {
+        applyScene((data.scene ?? {}) as StoredScene, false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [api, drawingId, initialUpdatedAt, supabase]);
+  }, [api, applyScene, drawingId, initialUpdatedAt, supabase]);
 
   async function handleBackToDashboard(e: React.MouseEvent) {
     e.preventDefault();
@@ -344,6 +445,12 @@ export default function ExcalidrawEditor({
             {saveLabel[saveState]}
           </span>
           <button
+            onClick={() => setHistoryOpen(true)}
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+          >
+            History
+          </button>
+          <button
             onClick={() => setLibraryOpen(true)}
             className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
           >
@@ -381,6 +488,17 @@ export default function ExcalidrawEditor({
           </MainMenu>
         </Excalidraw>
       </div>
+
+      {historyOpen && (
+        <HistoryDialog
+          drawingId={drawingId}
+          onRestore={(scene) => {
+            applyScene(scene, true);
+            setHistoryOpen(false);
+          }}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
 
       {libraryOpen && api && (
         <LibraryDialog
