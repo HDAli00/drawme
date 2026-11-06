@@ -8,6 +8,12 @@ import {
   moveDrawing,
 } from "@/app/dashboard/actions";
 import type { Folder } from "@/lib/types";
+import {
+  CardCheckbox,
+  cardRing,
+  selectOnClick,
+  type CardSelectionProps,
+} from "./CardSelect";
 
 type DrawingSummary = {
   id: string;
@@ -20,7 +26,8 @@ type DrawingSummary = {
 export default function DrawingCard({
   drawing,
   folders,
-}: {
+  ...selection
+}: CardSelectionProps & {
   drawing: DrawingSummary;
   folders: Folder[];
 }) {
@@ -38,9 +45,13 @@ export default function DrawingCard({
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md">
+    <div
+      className={`group relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md ${cardRing(selection.selected)}`}
+    >
+      <CardCheckbox {...selection} label={drawing.title} />
       <Link
         href={`/draw/${drawing.id}`}
+        onClick={selectOnClick(selection)}
         className="flex h-36 items-center justify-center bg-zinc-50"
       >
         {drawing.thumbnail ? (
@@ -74,6 +85,7 @@ export default function DrawingCard({
           ) : (
             <Link
               href={`/draw/${drawing.id}`}
+              onClick={selectOnClick(selection)}
               className="block truncate text-sm font-medium hover:text-indigo-600"
               title={drawing.title}
             >

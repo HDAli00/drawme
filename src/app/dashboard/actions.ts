@@ -132,3 +132,36 @@ export async function deleteNote(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
 }
+
+// Bulk actions for items selected on the dashboard.
+export async function moveItems(
+  drawingIds: string[],
+  noteIds: string[],
+  folderId: string | null,
+) {
+  const supabase = await createClient();
+  const results = await Promise.all([
+    drawingIds.length
+      ? supabase.from("drawings").update({ folder_id: folderId }).in("id", drawingIds)
+      : null,
+    noteIds.length
+      ? supabase.from("notes").update({ folder_id: folderId }).in("id", noteIds)
+      : null,
+  ]);
+  const error = results.find((r) => r?.error)?.error;
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteItems(drawingIds: string[], noteIds: string[]) {
+  const supabase = await createClient();
+  const results = await Promise.all([
+    drawingIds.length
+      ? supabase.from("drawings").delete().in("id", drawingIds)
+      : null,
+    noteIds.length ? supabase.from("notes").delete().in("id", noteIds) : null,
+  ]);
+  const error = results.find((r) => r?.error)?.error;
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}

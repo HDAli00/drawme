@@ -4,6 +4,12 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { deleteNote, moveNote } from "@/app/dashboard/actions";
 import type { Folder } from "@/lib/types";
+import {
+  CardCheckbox,
+  cardRing,
+  selectOnClick,
+  type CardSelectionProps,
+} from "./CardSelect";
 
 type NoteSummary = {
   id: string;
@@ -30,7 +36,8 @@ function excerpt(markdown: string) {
 export default function NoteCard({
   note,
   folders,
-}: {
+  ...selection
+}: CardSelectionProps & {
   note: NoteSummary;
   folders: Folder[];
 }) {
@@ -41,12 +48,16 @@ export default function NoteCard({
       .length;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:shadow-md">
+    <div
+      className={`group relative flex flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition hover:shadow-md ${cardRing(selection.selected)}`}
+    >
+      <CardCheckbox {...selection} label={note.title} />
       <Link
         href={`/notes/${note.id}`}
-        className="flex h-36 flex-col gap-2 overflow-hidden bg-amber-50/60 p-4"
+        onClick={selectOnClick(selection)}
+        className="flex h-36 flex-col gap-2 overflow-hidden bg-amber-50/60 px-4 pt-11 pb-3"
       >
-        <span className="line-clamp-4 text-sm leading-relaxed text-zinc-600">
+        <span className="line-clamp-3 text-sm leading-relaxed text-zinc-600">
           {text || <span className="text-zinc-400">Empty note</span>}
         </span>
         {embeds > 0 && (
@@ -59,6 +70,7 @@ export default function NoteCard({
         <div className="min-w-0 flex-1">
           <Link
             href={`/notes/${note.id}`}
+            onClick={selectOnClick(selection)}
             className="block truncate text-sm font-medium hover:text-indigo-600"
             title={note.title}
           >

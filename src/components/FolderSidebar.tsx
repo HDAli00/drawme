@@ -111,14 +111,14 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      className={`flex items-center justify-between rounded-md px-2 py-1.5 ${
+      className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 ${
         active
           ? "bg-indigo-50 font-medium text-indigo-700"
           : "text-zinc-700 hover:bg-zinc-100"
       }`}
     >
       <span className="truncate">{label}</span>
-      <span className="text-xs text-zinc-400">{count}</span>
+      <span className="shrink-0 text-xs text-zinc-400">{count}</span>
     </Link>
   );
 }

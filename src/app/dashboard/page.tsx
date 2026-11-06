@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppHeader from "@/components/AppHeader";
-import DrawingCard from "@/components/DrawingCard";
-import NoteCard from "@/components/NoteCard";
+import ItemGrid from "@/components/ItemGrid";
 import FolderSidebar from "@/components/FolderSidebar";
 import { createDrawing, createNote } from "./actions";
 import type { Folder, Profile } from "@/lib/types";
@@ -119,15 +118,7 @@ export default async function DashboardPage({
           </div>
 
           {visible.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {visible.map((item) =>
-                item.kind === "note" ? (
-                  <NoteCard key={item.id} note={item} folders={allFolders} />
-                ) : (
-                  <DrawingCard key={item.id} drawing={item} folders={allFolders} />
-                ),
-              )}
-            </div>
+            <ItemGrid items={visible} folders={allFolders} />
           ) : (
             <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-12 text-center text-zinc-500">
               <p className="mb-2 text-lg">
