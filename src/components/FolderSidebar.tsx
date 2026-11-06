@@ -29,7 +29,7 @@ export default function FolderSidebar({
       <nav className="flex flex-col gap-0.5 text-sm">
         <SidebarLink
           href="/dashboard"
-          label="All drawings"
+          label="All items"
           count={total}
           active={selected === null}
         />

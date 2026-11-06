@@ -92,3 +92,43 @@ export async function deleteFolder(id: string) {
   if (error) throw new Error(error.message);
   redirect("/dashboard");
 }
+
+export async function createNote(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const folderId = formData.get("folderId");
+  const title = String(formData.get("title") ?? "").trim().slice(0, 200);
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({
+      owner_id: user.id,
+      title: title || "Untitled note",
+      folder_id: typeof folderId === "string" && folderId ? folderId : null,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  redirect(`/notes/${data.id}`);
+}
+
+export async function moveNote(id: string, folderId: string | null) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notes")
+    .update({ folder_id: folderId })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteNote(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("notes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}

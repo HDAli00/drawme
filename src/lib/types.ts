@@ -34,3 +34,21 @@ export type Library = {
   storage_path: string | null;
   created_at: string;
 };
+
+export type Note = {
+  id: string;
+  owner_id: string;
+  folder_id: string | null;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// What a note needs to know to resolve [[links]] and drawing embeds.
+export type LinkTarget = {
+  id: string;
+  title: string;
+  folder_id: string | null;
+  updated_at: string;
+};
