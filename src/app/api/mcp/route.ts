@@ -2,6 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { hashToken, TOKEN_PREFIX, type TokenScope } from "@/lib/apiTokens";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMcpServer } from "@/lib/mcp/server";
+import { publicAppUrl } from "@/lib/appUrl";
 
 // Remote MCP endpoint (Streamable HTTP, stateless). Clients authenticate with
 // a personal access token created on /settings:
@@ -44,7 +45,7 @@ async function handle(request: Request) {
     supabase,
     userId: row.owner_id,
     scope: row.scope as TokenScope,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin,
+    appUrl: publicAppUrl(new URL(request.url).origin),
   });
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless: each request stands alone

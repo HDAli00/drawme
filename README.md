@@ -107,7 +107,7 @@ the `admin` role (via a database trigger reading `app_config`).
 | `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | Supabase anon key (RLS applies) |
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | Seed script and the `/api/mcp` endpoint — never shipped to the client |
-| `NEXT_PUBLIC_APP_URL` | server (optional) | Public base URL used for links returned by MCP tools; defaults to the request origin |
+| `NEXT_PUBLIC_APP_URL` | server (optional) | Public base URL shown on the MCP page and used in links returned by MCP tools; defaults to Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), then the request origin. Use the production domain for MCP clients: per-deployment `*-<hash>-*.vercel.app` URLs are behind Vercel Authentication |
 | `INITIAL_ADMIN_EMAIL` | server only | Bootstrap admin account email |
 | `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED` | client | Set `true` to show the Google login button |
 

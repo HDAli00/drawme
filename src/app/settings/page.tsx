@@ -5,6 +5,7 @@ import AppHeader from "@/components/AppHeader";
 import ApiTokenManager from "@/components/ApiTokenManager";
 import type { Profile } from "@/lib/types";
 import type { ApiToken } from "@/lib/apiTokens";
+import { publicAppUrl } from "@/lib/appUrl";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -25,7 +26,7 @@ export default async function SettingsPage() {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const mcpUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`}/api/mcp`;
+  const mcpUrl = `${publicAppUrl(`${proto}://${host}`)}/api/mcp`;
 
   return (
     <div className="min-h-screen bg-zinc-50">
