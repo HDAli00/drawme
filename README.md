@@ -46,6 +46,18 @@ use your content as context and write back to it.
      "headers": { "Authorization": "Bearer drawme_pat_..." } } } }
    ```
 
+### Using it from this repo
+
+The repo ships a project-scoped `.mcp.json`, so Claude Code opened in this
+folder offers the `drawme` server automatically (approve it once on start).
+It reads the URL and token from your environment; nothing secret is committed:
+
+```bash
+export DRAWME_MCP_URL=https://<your-app>/api/mcp   # defaults to http://localhost:3000/api/mcp
+export DRAWME_MCP_TOKEN=drawme_pat_...             # from the MCP page in the app
+claude                                             # then: /mcp to check it's connected
+```
+
 **Tools**
 
 | Tool | Access | What it does |
