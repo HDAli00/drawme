@@ -15,6 +15,9 @@ export default function AppHeader({ profile }: { profile: Profile }) {
           <Link href="/libraries" className="hover:text-zinc-900">
             Libraries
           </Link>
+          <Link href="/settings" className="hover:text-zinc-900">
+            MCP
+          </Link>
           {profile.role === "admin" && (
             <Link href="/admin" className="hover:text-zinc-900">
               Admin
