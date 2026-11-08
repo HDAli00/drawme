@@ -23,6 +23,49 @@ libraries (AWS / GCP / Azure architecture icons pre-seeded), and an admin area.
   libraries. Authorization is enforced in the database via RLS (and a trigger
   guarding `profiles.role`), not just the UI.
 
+## MCP server (AI access to your drawings & notes)
+
+drawme exposes a remote [MCP](https://modelcontextprotocol.io) server at
+`/api/mcp` (Streamable HTTP, stateless), so Claude and other MCP clients can
+use your content as context and write back to it.
+
+1. Sign in and open **MCP** in the header (`/settings`). Create a token —
+   *Read only* or *Read & write*, with an expiry. It is shown once; only its
+   SHA-256 hash is stored.
+2. Add the server to your client, e.g. Claude Code:
+
+   ```bash
+   claude mcp add --transport http drawme https://<your-app>/api/mcp \
+     --header "Authorization: Bearer drawme_pat_..."
+   ```
+
+   or in an `mcp.json` (Claude Desktop, Cursor, ...):
+
+   ```json
+   { "mcpServers": { "drawme": { "type": "http", "url": "https://<your-app>/api/mcp",
+     "headers": { "Authorization": "Bearer drawme_pat_..." } } } }
+   ```
+
+**Tools**
+
+| Tool | Access | What it does |
+| --- | --- | --- |
+| `list_folders` | read | Folders with drawing/note counts |
+| `list_items` | read | Drawings and notes, filterable by folder / title |
+| `search` | read | Search titles, text on drawings and note content |
+| `get_drawing` | read | Text summary of shapes, labels, arrows (with ids + coordinates) and the thumbnail image; optionally raw elements |
+| `get_note` | read | Note Markdown plus embedded drawing ids and `[[wiki links]]` |
+| `create_folder` | write | New folder |
+| `create_note` / `update_note` | write | New note; replace / append / prepend content (history is kept) |
+| `create_drawing` | write | New drawing from a simple spec: rectangles, ellipses, diamonds with labels, text, and arrows connecting shapes by id |
+| `add_to_drawing` | write | Add elements to an existing drawing, optionally connecting arrows to existing shapes |
+| `rename_item` / `move_item` | write | Rename drawings/notes/folders; move items between folders |
+
+There are deliberately no delete tools. The endpoint authenticates the token,
+then uses the service-role client with every query explicitly scoped to the
+token owner's `owner_id` (`src/lib/mcp/server.ts`). Drawings created or
+changed via MCP get a fresh thumbnail the next time they're edited in the app.
+
 ## Local development
 
 ```bash
@@ -33,7 +76,7 @@ npm run dev
 
 ### Database setup
 
-Apply `supabase/migrations/00001_init.sql` to your Supabase project (SQL
+Apply the migrations in `supabase/migrations/` (in order) to your Supabase project (SQL
 editor or `supabase db push`). Then seed the global libraries and the initial
 admin email:
 
@@ -51,7 +94,8 @@ the `admin` role (via a database trigger reading `app_config`).
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | Supabase anon key (RLS applies) |
-| `SUPABASE_SERVICE_ROLE_KEY` | server only | Used only by the seed script — never shipped to the client |
+| `SUPABASE_SERVICE_ROLE_KEY` | server only | Seed script and the `/api/mcp` endpoint — never shipped to the client |
+| `NEXT_PUBLIC_APP_URL` | server (optional) | Public base URL used for links returned by MCP tools; defaults to the request origin |
 | `INITIAL_ADMIN_EMAIL` | server only | Bootstrap admin account email |
 | `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED` | client | Set `true` to show the Google login button |
 
