@@ -23,11 +23,23 @@ async function handle(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from("api_tokens")
     .select("id, owner_id, scope, expires_at, last_used_at")
     .eq("token_hash", hashToken(token))
     .maybeSingle();
+  if (error) {
+    // Usually a wrong or missing SUPABASE_SERVICE_ROLE_KEY, not a bad token.
+    console.error("MCP token lookup failed:", error.message);
+    return Response.json(
+      {
+        jsonrpc: "2.0",
+        error: { code: -32603, message: "drawme server misconfigured: could not check the token." },
+        id: null,
+      },
+      { status: 500 },
+    );
+  }
   if (!row || (row.expires_at && new Date(row.expires_at) < new Date())) {
     return unauthorized("Invalid, revoked or expired drawme access token.");
   }
