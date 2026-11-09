@@ -46,6 +46,18 @@ use your content as context and write back to it.
      "headers": { "Authorization": "Bearer drawme_pat_..." } } } }
    ```
 
+### Using it from this repo
+
+The repo ships a project-scoped `.mcp.json`, so Claude Code opened in this
+folder offers the `drawme` server automatically (approve it once on start).
+It reads the URL and token from your environment; nothing secret is committed:
+
+```bash
+export DRAWME_MCP_URL=https://<your-app>/api/mcp   # defaults to http://localhost:3000/api/mcp
+export DRAWME_MCP_TOKEN=drawme_pat_...             # from the MCP page in the app
+claude                                             # then: /mcp to check it's connected
+```
+
 **Tools**
 
 | Tool | Access | What it does |
@@ -95,7 +107,7 @@ the `admin` role (via a database trigger reading `app_config`).
 | `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | Supabase anon key (RLS applies) |
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | Seed script and the `/api/mcp` endpoint — never shipped to the client |
-| `NEXT_PUBLIC_APP_URL` | server (optional) | Public base URL used for links returned by MCP tools; defaults to the request origin |
+| `NEXT_PUBLIC_APP_URL` | server (optional) | Public base URL shown on the MCP page and used in links returned by MCP tools; defaults to Vercel's production domain (`VERCEL_PROJECT_PRODUCTION_URL`), then the request origin. Use the production domain for MCP clients: per-deployment `*-<hash>-*.vercel.app` URLs are behind Vercel Authentication |
 | `INITIAL_ADMIN_EMAIL` | server only | Bootstrap admin account email |
 | `NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED` | client | Set `true` to show the Google login button |
 

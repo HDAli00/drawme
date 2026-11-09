@@ -2,6 +2,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { hashToken, TOKEN_PREFIX, type TokenScope } from "@/lib/apiTokens";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMcpServer } from "@/lib/mcp/server";
+import { publicAppUrl } from "@/lib/appUrl";
 
 // Remote MCP endpoint (Streamable HTTP, stateless). Clients authenticate with
 // a personal access token created on /settings:
@@ -22,11 +23,23 @@ async function handle(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from("api_tokens")
     .select("id, owner_id, scope, expires_at, last_used_at")
     .eq("token_hash", hashToken(token))
     .maybeSingle();
+  if (error) {
+    // Usually a wrong or missing SUPABASE_SERVICE_ROLE_KEY, not a bad token.
+    console.error("MCP token lookup failed:", error.message);
+    return Response.json(
+      {
+        jsonrpc: "2.0",
+        error: { code: -32603, message: "drawme server misconfigured: could not check the token." },
+        id: null,
+      },
+      { status: 500 },
+    );
+  }
   if (!row || (row.expires_at && new Date(row.expires_at) < new Date())) {
     return unauthorized("Invalid, revoked or expired drawme access token.");
   }
@@ -44,7 +57,7 @@ async function handle(request: Request) {
     supabase,
     userId: row.owner_id,
     scope: row.scope as TokenScope,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin,
+    appUrl: publicAppUrl(new URL(request.url).origin),
   });
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless: each request stands alone
