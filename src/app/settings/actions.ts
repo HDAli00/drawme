@@ -43,3 +43,24 @@ export async function revokeApiToken(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings");
 }
+
+export async function updateProfile(
+  displayName: string,
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const trimmed = displayName.trim().slice(0, 100);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ display_name: trimmed || null })
+    .eq("id", user.id);
+  if (error) return { error: error.message };
+
+  // The name appears in the header on every page.
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

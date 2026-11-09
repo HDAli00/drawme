@@ -20,7 +20,7 @@ export function CardCheckbox({
         selected || selecting
           ? "opacity-100"
           : "opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-      } ${selected ? "border-indigo-400" : "border-zinc-300"}`}
+      } ${selected ? "border-indigo-400" : "border-slate-300"}`}
       onClick={(e) => e.stopPropagation()}
     >
       <input
@@ -46,5 +46,5 @@ export function selectOnClick({ selecting, onToggle }: CardSelectionProps) {
 export function cardRing(selected: boolean) {
   return selected
     ? "border-indigo-400 ring-2 ring-indigo-300"
-    : "border-zinc-200";
+    : "border-slate-200";
 }

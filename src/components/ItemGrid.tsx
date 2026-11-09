@@ -112,7 +112,7 @@ export default function ItemGrid({
             : "border border-transparent"
         }`}
       >
-        <label className="flex items-center gap-2 text-zinc-600">
+        <label className="flex items-center gap-2 text-slate-600">
           <input
             type="checkbox"
             checked={allSelected}
@@ -138,7 +138,7 @@ export default function ItemGrid({
                 if (value) moveSelected(value === "__unfiled" ? null : value);
               }}
               aria-label="Move selected to folder"
-              className="rounded-md border border-indigo-300 bg-white px-2 py-1 text-sm text-zinc-700"
+              className="rounded-md border border-indigo-300 bg-white px-2 py-1 text-sm text-slate-700"
             >
               <option value="">Move to folder…</option>
               <option value="__unfiled">Unfiled</option>
@@ -151,13 +151,13 @@ export default function ItemGrid({
             <button
               onClick={deleteSelected}
               disabled={pending}
-              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-zinc-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+              className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
             >
               Delete
             </button>
             <button
               onClick={() => setSelected(new Set())}
-              className="ml-auto text-zinc-500 hover:text-zinc-800"
+              className="ml-auto text-slate-500 hover:text-slate-800"
             >
               {pending ? "Working…" : "Clear selection"}
             </button>
