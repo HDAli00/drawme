@@ -85,7 +85,7 @@ export async function renameFolder(id: string, name: string) {
   revalidatePath("/dashboard");
 }
 
-// Drawings in the folder are kept and become unfiled.
+// Items in the folder are kept and move to General (no folder).
 export async function deleteFolder(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("folders").delete().eq("id", id);
@@ -162,6 +162,18 @@ export async function deleteItems(drawingIds: string[], noteIds: string[]) {
     noteIds.length ? supabase.from("notes").delete().in("id", noteIds) : null,
   ]);
   const error = results.find((r) => r?.error)?.error;
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+}
+
+export async function renameNote(id: string, title: string) {
+  const supabase = await createClient();
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const { error } = await supabase
+    .from("notes")
+    .update({ title: trimmed.slice(0, 200) })
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
 }

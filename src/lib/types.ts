@@ -41,6 +41,7 @@ export type Note = {
   folder_id: string | null;
   title: string;
   content: string;
+  cover_image: string | null;
   created_at: string;
   updated_at: string;
 };

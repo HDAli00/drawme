@@ -8,6 +8,9 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import { GENERAL } from "@/lib/items";
+import { BackMark, ImageIcon } from "./Icons";
+import { fileToCover } from "@/lib/coverImage";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { createNote } from "@/app/dashboard/actions";
@@ -72,6 +75,10 @@ export default function NoteEditor({
   const [mode, setMode] = useState<Mode>("split");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [cover, setCover] = useState(note.cover_image);
+  const [coverBusy, setCoverBusy] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const coverInput = useRef<HTMLInputElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   // Cursor position to restore once an insertion has rendered.
   const pendingCursor = useRef<number | null>(null);
@@ -272,9 +279,35 @@ export default function NoteEditor({
     [flush, note.folder_id],
   );
 
-  const backHref = note.folder_id
-    ? `/dashboard?folder=${note.folder_id}`
-    : "/dashboard";
+  const backHref = `/dashboard?folder=${note.folder_id ?? GENERAL}`;
+
+  // The cover is saved on its own, straight away, separately from the text.
+  async function saveCover(value: string | null) {
+    setCoverBusy(true);
+    setCoverError(null);
+    const { data, error } = await supabase
+      .from("notes")
+      .update({ cover_image: value })
+      .eq("id", note.id)
+      .select("updated_at")
+      .single();
+    setCoverBusy(false);
+    if (error || !data) {
+      setCoverError("Couldn’t save the cover image.");
+      return;
+    }
+    serverUpdatedAt.current = data.updated_at;
+    setCover(value);
+  }
+
+  async function handleCoverFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      await saveCover(await fileToCover(file));
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : "Couldn’t read that image.");
+    }
+  }
 
   async function handleBack(e: React.MouseEvent) {
     e.preventDefault();
@@ -299,9 +332,10 @@ export default function NoteEditor({
           <Link
             href={backHref}
             onClick={handleBack}
-            className="shrink-0 rounded-md border border-zinc-300 px-2.5 py-1 text-sm text-zinc-600 hover:bg-zinc-50"
+            className="flex shrink-0 items-center gap-2 rounded-md py-1 pr-2.5 pl-1 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            title="Back to the folder"
           >
-            ← Dashboard
+            <BackMark />
           </Link>
           <input
             value={title}
@@ -332,6 +366,16 @@ export default function NoteEditor({
               </button>
             ))}
           </div>
+          {!cover && (
+            <button
+              onClick={() => coverInput.current?.click()}
+              disabled={coverBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
+            >
+              <ImageIcon className="size-4 text-zinc-500" />
+              {coverBusy ? "Uploading…" : "Add cover"}
+            </button>
+          )}
           <button
             onClick={() => setHistoryOpen(true)}
             className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50"
@@ -349,6 +393,44 @@ export default function NoteEditor({
           </button>
         </div>
       </div>
+
+      <input
+        ref={coverInput}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          void handleCoverFile(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
+      {coverError && (
+        <p className="border-b border-red-100 bg-red-50 px-4 py-1.5 text-xs text-red-700">
+          {coverError}
+        </p>
+      )}
+      {cover && (
+        <div className="group relative h-40 shrink-0 overflow-hidden border-b border-zinc-200 bg-zinc-100 sm:h-48">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={cover} alt="" className="h-full w-full object-cover" />
+          <div className="absolute right-3 bottom-3 flex gap-2 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+            <button
+              onClick={() => coverInput.current?.click()}
+              disabled={coverBusy}
+              className="rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-200 hover:bg-white"
+            >
+              {coverBusy ? "Saving…" : "Change cover"}
+            </button>
+            <button
+              onClick={() => void saveCover(null)}
+              disabled={coverBusy}
+              className="rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-200 hover:bg-white hover:text-red-600"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1">
         {mode !== "preview" && (

@@ -8,16 +8,18 @@ import {
   renameFolder,
 } from "@/app/dashboard/actions";
 import type { Folder } from "@/lib/types";
+import { GENERAL, GENERAL_LABEL } from "@/lib/items";
+import { useFolderDrop } from "./useFolderDrop";
 import {
   EditIcon,
   FolderIcon,
   GridIcon,
+  HomeIcon,
   InboxIcon,
   PlusIcon,
   TrashIcon,
 } from "./Icons";
 
-const UNFILED = "unfiled";
 
 export default function FolderSidebar({
   folders,
@@ -36,19 +38,21 @@ export default function FolderSidebar({
     <aside className="w-full shrink-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:sticky md:top-24 md:w-60">
       <nav className="flex flex-col gap-0.5 text-sm" aria-label="Folders">
         <GroupLabel>Browse</GroupLabel>
+        <SidebarLink href="/dashboard" label="Home" icon={HomeIcon} active={false} />
         <SidebarLink
-          href="/dashboard"
+          href="/dashboard?type=all"
           label="All items"
           icon={GridIcon}
           count={total}
-          active={selected === null}
+          active={selected === "all"}
         />
         <SidebarLink
-          href={`/dashboard?folder=${UNFILED}`}
-          label="Unfiled"
+          href={`/dashboard?folder=${GENERAL}`}
+          label={GENERAL_LABEL}
           icon={InboxIcon}
-          count={counts[UNFILED] ?? 0}
-          active={selected === UNFILED}
+          count={counts[GENERAL] ?? 0}
+          active={selected === GENERAL}
+          dropFolder={null}
         />
 
         <div className="mt-4 mb-1 flex items-center justify-between border-t border-slate-100 pt-4 pr-1">
@@ -130,32 +134,42 @@ function SidebarLink({
   icon: Icon,
   count,
   active,
+  dropFolder,
 }: {
   href: string;
   label: string;
   icon: (p: { className?: string }) => React.ReactNode;
-  count: number;
+  count?: number;
   active: boolean;
+  // Folder that items dropped here move to (null = General); omit for none.
+  dropFolder?: string | null;
 }) {
+  const { over, pending, dropProps } = useFolderDrop(dropFolder ?? null);
   return (
     <Link
       href={href}
+      draggable={false}
       aria-current={active ? "page" : undefined}
+      {...(dropFolder !== undefined ? dropProps : {})}
       className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 transition-colors ${
-        active
-          ? "bg-indigo-50 font-medium text-indigo-700"
-          : "text-slate-700 hover:bg-slate-100"
-      }`}
+        over
+          ? "bg-indigo-600 text-white ring-2 ring-indigo-300"
+          : active
+            ? "bg-indigo-50 font-medium text-indigo-700"
+            : "text-slate-700 hover:bg-slate-100"
+      } ${pending ? "opacity-60" : ""}`}
     >
       <Icon
         className={`size-4 shrink-0 ${active ? "text-indigo-600" : "text-slate-400"}`}
       />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      <span
-        className={`shrink-0 text-xs tabular-nums ${active ? "text-indigo-500" : "text-slate-400"}`}
-      >
-        {count}
-      </span>
+      {count !== undefined && (
+        <span
+          className={`shrink-0 text-xs tabular-nums ${over ? "text-indigo-100" : active ? "text-indigo-500" : "text-slate-400"}`}
+        >
+          {count}
+        </span>
+      )}
     </Link>
   );
 }
@@ -211,6 +225,7 @@ function FolderItem({
           href={`/dashboard?folder=${folder.id}`}
           label={pending ? name : folder.name}
           icon={FolderIcon}
+          dropFolder={folder.id}
           count={count}
           active={active}
         />
@@ -228,7 +243,7 @@ function FolderItem({
           onClick={() => {
             if (
               confirm(
-                `Delete folder "${folder.name}"? Its drawings are kept and moved to Unfiled.`,
+                `Delete folder "${folder.name}"? Its drawings and notes are kept and moved to ${GENERAL_LABEL}.`,
               )
             ) {
               startTransition(() => deleteFolder(folder.id));
