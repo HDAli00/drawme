@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { GENERAL } from "@/lib/items";
+import { BackMark } from "./Icons";
 import { useRouter } from "next/navigation";
 import {
   Excalidraw,
@@ -114,6 +116,7 @@ export default function ExcalidrawEditor({
   initialTitle,
   initialScene,
   initialUpdatedAt,
+  folderId,
   initialLibraryItems,
   userId,
 }: EditorShellProps) {
@@ -399,6 +402,8 @@ export default function ExcalidrawEditor({
     };
   }, [api, applyScene, drawingId, initialUpdatedAt, supabase]);
 
+  const backHref = `/dashboard?folder=${folderId ?? GENERAL}`;
+
   async function handleBackToDashboard(e: React.MouseEvent) {
     e.preventDefault();
     // Make sure the latest changes are stored before leaving, otherwise the
@@ -407,7 +412,7 @@ export default function ExcalidrawEditor({
     await saveChain.current;
     // Stay on the page if the save failed; it keeps retrying in the background.
     if (isDirty()) return;
-    router.push("/dashboard");
+    router.push(backHref);
     router.refresh();
   }
 
@@ -423,11 +428,12 @@ export default function ExcalidrawEditor({
       <div className="flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-4 py-2">
         <div className="flex min-w-0 items-center gap-3">
           <Link
-            href="/dashboard"
+            href={backHref}
             onClick={handleBackToDashboard}
-            className="shrink-0 rounded-md border border-zinc-300 px-2.5 py-1 text-sm text-zinc-600 hover:bg-zinc-50"
+            className="flex shrink-0 items-center gap-2 rounded-md py-1 pr-2.5 pl-1 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            title="Back to the folder"
           >
-            ← Dashboard
+            <BackMark />
           </Link>
           <input
             value={title}

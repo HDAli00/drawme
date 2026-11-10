@@ -35,6 +35,7 @@ export default async function DrawPage({
       initialUpdatedAt={d.updated_at}
       initialLibraryItems={(libState?.library_items as unknown[]) ?? []}
       userId={user.id}
+      folderId={d.folder_id}
     />
   );
 }

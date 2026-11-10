@@ -64,9 +64,9 @@ export default function ApiTokenManager({
   );
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-lg border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold">Create an access token</h2>
+    <div className="space-y-4">
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">Create an access token</h3>
         <form
           className="flex flex-wrap items-end gap-3"
           onSubmit={(e) => {
@@ -141,8 +141,8 @@ export default function ApiTokenManager({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold">Connect a client</h2>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">Connect a client</h3>
         <CopyBlock label="MCP server URL" value={mcpUrl} />
         <CopyBlock label="Claude Code" value={claudeCode} />
         <CopyBlock
@@ -151,8 +151,8 @@ export default function ApiTokenManager({
         />
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 font-semibold">Your tokens</h2>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">Your tokens</h3>
         {tokens.length === 0 ? (
           <p className="text-sm text-zinc-500">No tokens yet.</p>
         ) : (

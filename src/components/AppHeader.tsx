@@ -1,47 +1,37 @@
 import Link from "next/link";
 import type { Profile } from "@/lib/types";
+import { displayName, initials } from "@/lib/profile";
+import { PenIcon } from "./Icons";
+import { MainNav, UserMenu } from "./AppHeaderClient";
 
 export default function AppHeader({ profile }: { profile: Profile }) {
+  const isAdmin = profile.role === "admin";
   return (
-    <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-3">
-      <div className="flex items-center gap-6">
-        <Link href="/dashboard" className="text-lg font-bold tracking-tight">
-          drawme
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:px-6">
+        <Link
+          href="/dashboard"
+          className="flex shrink-0 items-center gap-2.5"
+          aria-label="drawme home"
+        >
+          <span className="flex size-8 items-center justify-center rounded-lg bg-slate-900 text-white shadow-sm">
+            <PenIcon className="size-4" />
+          </span>
+          <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+            drawme
+          </span>
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-zinc-600">
-          <Link href="/dashboard" className="hover:text-zinc-900">
-            Drawings
-          </Link>
-          <Link href="/libraries" className="hover:text-zinc-900">
-            Libraries
-          </Link>
-          <Link href="/settings" className="hover:text-zinc-900">
-            MCP
-          </Link>
-          {profile.role === "admin" && (
-            <Link href="/admin" className="hover:text-zinc-900">
-              Admin
-            </Link>
-          )}
-        </nav>
-      </div>
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-zinc-500">
-          {profile.display_name || profile.email}
-          {profile.role === "admin" && (
-            <span className="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-medium text-indigo-700">
-              admin
-            </span>
-          )}
-        </span>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="rounded-md border border-zinc-300 px-3 py-1.5 hover:bg-zinc-50"
-          >
-            Sign out
-          </button>
-        </form>
+
+        <MainNav isAdmin={isAdmin} />
+
+        <div className="ml-auto">
+          <UserMenu
+            name={displayName(profile)}
+            email={profile.email}
+            initials={initials(profile)}
+            isAdmin={isAdmin}
+          />
+        </div>
       </div>
     </header>
   );

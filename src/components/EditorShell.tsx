@@ -24,6 +24,7 @@ export type EditorShellProps = {
   initialUpdatedAt: string;
   initialLibraryItems: unknown[];
   userId: string;
+  folderId: string | null;
 };
 
 export default function EditorShell(props: EditorShellProps) {
